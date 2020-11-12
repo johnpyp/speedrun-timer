@@ -17,124 +17,122 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
 
 import java.util.List;
 
-
 public class TickHandler {
-    private final MinecraftClient client;
-    private final Debounce persistDebounce;
-    private final Debounce serverQueryDebounce;
-    private PlayerEntity player = null;
-    private World world = null;
-    private MinecraftServer server = null;
-    private ServerPlayerEntity serverPlayer = null;
-    private final RunDataStore store;
+  private final MinecraftClient minecraftClient;
+  private final Debounce persistDebounce;
+  private final Debounce serverQueryDebounce;
+  private final RunDataStore store;
 
-    public TickHandler(RunDataStore store) {
-        this.store = store;
-        this.persistDebounce = new Debounce(2000);
-        this.serverQueryDebounce = new Debounce(500);
-        client = MinecraftClient.getInstance();
+  public TickHandler(MinecraftClient client, RunDataStore store) {
+    this.store = store;
+    this.persistDebounce = new Debounce(2000);
+    this.serverQueryDebounce = new Debounce(500);
+    this.minecraftClient = client;
+  }
+
+  private static String splitLabel(long ticks) {
+    return ticks == -1 ? "--" : tickTime(ticks);
+  }
+
+  private static long getGameTicks(PlayerEntity player) {
+    return player.world.getTime();
+  }
+
+  private static String tickTime(long ticks) {
+    return timeFormat(ticks * 50);
+  }
+
+  private static String getGameTime(PlayerEntity player) {
+    return tickTime(getGameTicks(player));
+  }
+
+  private static String timeFormat(long ms) {
+    return DurationFormatUtils.formatDurationHMS(ms);
+  }
+
+  public void tick() {
+    if (minecraftClient == null) return;
+    PlayerEntity player = minecraftClient.player;
+    if (player == null) return;
+    MinecraftServer server = minecraftClient.getServer();
+    if (server == null) return;
+    ServerPlayerEntity serverPlayer = getServerPlayer(server);
+    if (serverPlayer == null || getGameTicks(player) <= 0) return;
+
+    render(minecraftClient, player, server, serverPlayer);
+  }
+
+  private boolean advancementDone(
+      String advancementId, ServerPlayerEntity serverPlayer, MinecraftServer server) {
+    PlayerAdvancementTracker tracker = serverPlayer.getAdvancementTracker();
+    Advancement advancement = server.getAdvancementLoader().get(new Identifier(advancementId));
+    AdvancementProgress advancementProgress = tracker.getProgress(advancement);
+    return advancementProgress.isDone();
+  }
+
+  private ServerPlayerEntity getServerPlayer(MinecraftServer server) {
+    List<ServerPlayerEntity> playerList = server.getPlayerManager().getPlayerList();
+    if (playerList.size() != 1) return null;
+    return playerList.get(0);
+  }
+
+  private SingleRunData updateRunData(
+      PlayerEntity player, MinecraftServer server, ServerPlayerEntity serverPlayer) {
+    long ticks = TickHandler.getGameTicks(player);
+    long currentTime = System.currentTimeMillis();
+
+    String levelPath = server.getSavePath(WorldSavePath.ROOT).normalize().toString();
+    long seed = server.getSaveProperties().getGeneratorOptions().getSeed();
+    SingleRunData run = store.solveItem(levelPath + ":" + seed, ticks);
+
+    if (!serverQueryDebounce.boing()) return run;
+
+    run.startTimestamp = Math.min(currentTime - (ticks * 50), run.startTimestamp);
+    if (run.finishedSplit == -1 && ((ServerPlayerEntityAccessor) serverPlayer).seenCredits()) {
+      run.finishedSplit = ticks;
+      run.finishedTimestamp = currentTime;
     }
+    if (run.overworldSplit == -1 && advancementDone("minecraft:nether/root", serverPlayer, server))
+      run.overworldSplit = ticks;
 
-    public void tick() {
-        if (client == null)
-            return;
-        player = client.player;
-        world = client.world;
-        server = client.getServer();
-
-        if (server == null) return;
-
-        serverPlayer = getServerPlayer(server);
-
-        if (world == null || player == null || serverPlayer == null || getGameTicks() <= 0)
-            return;
-
-        render();
+    if (run.netherSplit == -1
+        && run.overworldSplit != -1
+        && serverPlayer.world.getRegistryKey() == World.OVERWORLD) {
+      run.netherSplit = ticks;
     }
+    if (run.strongholdSplit == -1 && advancementDone("minecraft:end/root", serverPlayer, server))
+      run.strongholdSplit = ticks;
 
-    private boolean advancementDone(String advancementId, String criterionId) {
-        PlayerAdvancementTracker tracker = serverPlayer.getAdvancementTracker();
-        Advancement advancement = server.getAdvancementLoader().get(new Identifier(advancementId));
-        AdvancementProgress advancementProgress = tracker.getProgress(advancement);
-        return advancementProgress.isDone();
-    }
+    return run;
+  }
 
-    private ServerPlayerEntity getServerPlayer(MinecraftServer server) {
-        List<ServerPlayerEntity> playerList = server.getPlayerManager().getPlayerList();
-        if (playerList.size() != 1)
-            return null;
-        return playerList.get(0);
+  private void render(
+      MinecraftClient client,
+      PlayerEntity player,
+      MinecraftServer server,
+      ServerPlayerEntity serverPlayer) {
+    SingleRunData run = updateRunData(player, server, serverPlayer);
+    if (persistDebounce.boing()) store.persist();
 
-    }
+    final TextRenderer textRenderer = client.textRenderer;
+    Hud hud = new Hud(textRenderer, 5, 5);
+    if (((MinecraftClientAccessor) client).getGameOptions().debugEnabled) return;
+    String gameTimeLabel = "Game Time: " + getGameTime(player);
+    String realTimeLabel =
+        "Real Time: " + timeFormat(System.currentTimeMillis() - run.startTimestamp);
+    String overworldSplitLabel = "Overworld: " + splitLabel(run.overworldSplit);
+    String netherSplitLabel = "Nether: " + splitLabel(run.netherSplit);
+    String strongholdSplitLabel = "Stronghold: " + splitLabel(run.strongholdSplit);
+    String finishedSplitLabel = "FINISH: " + splitLabel(run.finishedSplit);
 
-    private SingleRunData updateRunData() {
-        String levelPath = server.getSavePath(WorldSavePath.ROOT).normalize().toString();
-        long seed = server.getSaveProperties().getGeneratorOptions().getSeed();
-        long ticks = this.getGameTicks();
-        SingleRunData run = store.solveItem(levelPath + ":" + seed, ticks);
-        if (!serverQueryDebounce.boing()) return run;
-        run.startTimestamp = Math.min(System.currentTimeMillis() - (ticks * 50), run.startTimestamp);
-        if (run.finishedSplit == -1 && ((ServerPlayerEntityAccessor) serverPlayer).seenCredits()) {
-            run.finishedSplit = this.getGameTicks();
-            run.finishedTimestamp = System.currentTimeMillis();
-        }
-        if (run.overworldSplit == -1 && advancementDone("minecraft:nether/root", "entered_nether"))
-            run.overworldSplit = this.getGameTicks();
-
-        if (run.netherSplit == -1 && run.overworldSplit != -1 && serverPlayer.world.getRegistryKey() == World.OVERWORLD) {
-            run.netherSplit = this.getGameTicks();
-        }
-        if (run.strongholdSplit == -1 && advancementDone("minecraft:end/root", "entered_end"))
-            run.strongholdSplit = this.getGameTicks();
-
-        return run;
-    }
-
-    private void render() {
-        // final MatrixStack matrixStack = new MatrixStack();
-
-        SingleRunData run = updateRunData();
-        if (this.persistDebounce.boing()) store.persist();
-
-        final TextRenderer textRenderer = client.textRenderer;
-        Hud hud = new Hud(textRenderer, 5, 5, false, 0);
-        if (((MinecraftClientAccessor) client).getGameOptions().debugEnabled) return;
-        String gameTimeLabel = "Game Time: " + getGameTime();
-        String realTimeLabel = "Real Time: " + timeFormat(System.currentTimeMillis() - run.startTimestamp);
-        String overworldSplitLabel = "Overworld: " + splitLabel(run.overworldSplit);
-        String netherSplitLabel = "Nether: " + splitLabel(run.netherSplit);
-        String strongholdSplitLabel = "Stronghold: " + splitLabel(run.strongholdSplit);
-        String finishedSplitLabel = "FINISH: " + splitLabel(run.finishedSplit);
-
-        hud.draw(gameTimeLabel, 0x29DB87);
-        hud.drawLine(realTimeLabel, 10, 0x59AB87);
-        hud.insertSpace(10);
-        hud.drawLine(overworldSplitLabel, 10, 0x9988FF);
-        hud.drawLine(netherSplitLabel, 10, 0xFF5555);
-        hud.drawLine(strongholdSplitLabel, 10, 0x99AADF);
-        hud.drawLine(finishedSplitLabel, 10, 0xFFA500);
-        hud.drawBackground(4,0x99000011);
-        hud.renderText();
-    }
-
-    private String splitLabel(long ticks) {
-        return ticks == -1 ? "--" : tickTime(ticks);
-    }
-
-    private long getGameTicks() {
-        return player.world.getTime();
-    }
-
-    private String tickTime(long ticks) {
-        return timeFormat(ticks * 50);
-    }
-
-    private String getGameTime() {
-        return tickTime(getGameTicks());
-    }
-
-    private String timeFormat(long ms) {
-        return DurationFormatUtils.formatDurationHMS(ms);
-    }
-
+    hud.draw(gameTimeLabel, 0x29DB87);
+    hud.drawLine(realTimeLabel, 10, 0x59AB87);
+    hud.insertSpace(10);
+    hud.drawLine(overworldSplitLabel, 10, 0x9988FF);
+    hud.drawLine(netherSplitLabel, 10, 0xFF5555);
+    hud.drawLine(strongholdSplitLabel, 10, 0x99AADF);
+    hud.drawLine(finishedSplitLabel, 10, 0xFFA500);
+    hud.drawBackground(4, 0x99000011);
+    hud.renderText();
+  }
 }
