@@ -1,9 +1,25 @@
-# Fabric Example Mod
+# Speedrun Timer - Fabric
 
-## Setup
+## Build
 
-For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.
+Minecraft version: 1.16.x
+
+```
+git clone https://github.com/johnpyp/speedrun-timer
+cd speedrun-timer
+./gradlew build
+
+# Mod jar is in build/speedruntimer-1.0.0.jar
+
+```
+
+## Usage
+
+1. Use minecraft 1.16.x with fabric installed
+2. Install [fabric-api]("https://www.curseforge.com/minecraft/mc-mods/fabric-api")
+3. Put `speedruntimer-1.0.0.jar` in your fabric mods folder
+4. Start running. No config yet.
 
 ## License
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+MIT
