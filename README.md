@@ -13,7 +13,7 @@ cd speedrun-timer
 ## Usage
 
 1. Use minecraft 1.16.x with fabric installed
-2. Install [fabric-api]("https://www.curseforge.com/minecraft/mc-mods/fabric-api")
+2. Install [fabric-api](https://www.curseforge.com/minecraft/mc-mods/fabric-api)
 3. Put `speedruntimer-1.0.0.jar` in your fabric mods folder
 4. Start running. No config yet.
 
