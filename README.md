@@ -2,15 +2,12 @@
 
 ## Build
 
-Minecraft version: 1.16.x
-
 ```
 git clone https://github.com/johnpyp/speedrun-timer
 cd speedrun-timer
 ./gradlew build
 
-# Mod jar is in build/speedruntimer-1.0.0.jar
-
+# Mod jar is in build/libs/speedruntimer-1.0.0.jar
 ```
 
 ## Usage
