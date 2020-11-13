@@ -6,7 +6,7 @@ public class Debounce {
 
   Debounce(long intervalMs) {
     this.intervalMs = intervalMs;
-    this.lastCalled = System.currentTimeMillis();
+    lastCalled = System.currentTimeMillis();
   }
 
   public boolean boing() {

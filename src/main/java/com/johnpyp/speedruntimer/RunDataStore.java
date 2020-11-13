@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.WorldSavePath;
 
 import java.io.File;
 import java.io.FileReader;
@@ -22,7 +24,7 @@ public class RunDataStore {
   private Map<String, SingleRunData> data = null;
 
   RunDataStore(String filename) {
-    this.file = new File(FabricLoader.getInstance().getConfigDir().toFile(), filename);
+    file = new File(FabricLoader.getInstance().getConfigDir().toFile(), filename);
   }
 
   public void load() throws IOException {
@@ -35,6 +37,12 @@ public class RunDataStore {
     data = GSON.fromJson(reader, dataMapType);
     System.out.println(data);
     if (data == null) data = new HashMap<>();
+  }
+
+  public static String getRunKey(MinecraftServer server) {
+    String levelPath = server.getSavePath(WorldSavePath.ROOT).normalize().toString();
+    long seed = server.getSaveProperties().getGeneratorOptions().getSeed();
+    return levelPath + ":" + seed;
   }
 
   public SingleRunData solveItem(String key, long ticks) {
@@ -50,9 +58,7 @@ public class RunDataStore {
       return solveItem(key, ticks);
     }
 
-    SingleRunData run = data.get(key);
-    run.ticks = ticks;
-    return run;
+    return data.get(key);
   }
 
   public void persist() {

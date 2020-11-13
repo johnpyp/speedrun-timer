@@ -8,10 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 class TextStuff {
-  public String text;
-  public int x;
-  public int y;
-  public int color;
+  public final String text;
+  public final int x;
+  public final int y;
+  public final int color;
 
   TextStuff(String text, int x, int y, int color) {
     this.text = text;
@@ -23,7 +23,7 @@ class TextStuff {
 
 public class Hud {
 
-  public List<TextStuff> textList;
+  private final List<TextStuff> textList;
   private final TextRenderer textRenderer;
   private final MatrixStack matrixStack;
   private int maxLen = 0;
@@ -34,10 +34,10 @@ public class Hud {
 
   Hud(TextRenderer textRenderer, int xOffset, int yOffset) {
     this.textRenderer = textRenderer;
-    this.matrixStack = new MatrixStack();
-    this.xOffset = this.lastX = xOffset;
-    this.yOffset = this.lastY = yOffset;
-    this.textList = new ArrayList<>();
+    matrixStack = new MatrixStack();
+    this.xOffset = lastX = xOffset;
+    this.yOffset = lastY = yOffset;
+    textList = new ArrayList<>();
   }
 
   public void draw(String text, int color) {
