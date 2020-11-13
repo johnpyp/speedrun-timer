@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class TickHandler {
 
@@ -51,7 +50,6 @@ public class TickHandler {
   }
 
   private static long getGameTicks(PlayerEntity player) {
-    if (player == null) return 0;
     return player.world.getTime();
   }
 
@@ -78,13 +76,9 @@ public class TickHandler {
 
   private boolean advancementDone(
       String advancementId, ServerPlayerEntity serverPlayer, MinecraftServer server) {
-    if (serverPlayer == null) return false;
     PlayerAdvancementTracker tracker = serverPlayer.getAdvancementTracker();
-    if (tracker == null) return false;
     Advancement advancement = server.getAdvancementLoader().get(new Identifier(advancementId));
-    if (advancement == null) return false;
     AdvancementProgress advancementProgress = tracker.getProgress(advancement);
-    if (advancementProgress == null) return false;
     return advancementProgress.isDone();
   }
 
@@ -109,7 +103,7 @@ public class TickHandler {
     if (!serverQueryDebounce.boing()) return run;
 
     boolean seenCredits = false;
-    if (serverPlayer == null || serverPlayer instanceof ServerPlayerEntityAccessor) {
+    if (serverPlayer instanceof ServerPlayerEntityAccessor) {
       seenCredits = ((ServerPlayerEntityAccessor) serverPlayer).seenCredits();
     }
     if (!run.isFinished() && seenCredits) {
