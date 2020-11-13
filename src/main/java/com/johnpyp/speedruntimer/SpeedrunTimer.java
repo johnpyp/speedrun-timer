@@ -19,6 +19,7 @@ public class SpeedrunTimer implements ModInitializer {
 
   @Override
   public void onInitialize() {
+    config.loadConfig();
     MinecraftClient client = MinecraftClient.getInstance();
     File configDir = FabricLoader.getInstance().getConfigDir().toFile();
     RunDataStore store = RunDataStore.of(new File(configDir, "speedrun-timer.data.json"));
