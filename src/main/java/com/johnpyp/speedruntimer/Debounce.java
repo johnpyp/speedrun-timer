@@ -1,6 +1,6 @@
 package com.johnpyp.speedruntimer;
 
-public class Debounce {
+final class Debounce {
   private final long intervalMs;
   private long lastCalled;
 

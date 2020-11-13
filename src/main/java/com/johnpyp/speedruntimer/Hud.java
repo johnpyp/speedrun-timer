@@ -7,26 +7,13 @@ import net.minecraft.client.util.math.MatrixStack;
 import java.util.ArrayList;
 import java.util.List;
 
-class TextStuff {
-  public final String text;
-  public final int x;
-  public final int y;
-  public final int color;
 
-  TextStuff(String text, int x, int y, int color) {
-    this.text = text;
-    this.x = x;
-    this.y = y;
-    this.color = color;
-  }
-}
-
-public class Hud {
+final class Hud {
 
   private final List<TextStuff> textList;
   private final TextRenderer textRenderer;
   private final MatrixStack matrixStack;
-  private int maxLen = 0;
+  private int maxLen;
   private final int xOffset;
   private final int yOffset;
   private int lastY;
@@ -34,36 +21,54 @@ public class Hud {
 
   Hud(TextRenderer textRenderer, int xOffset, int yOffset) {
     this.textRenderer = textRenderer;
-    matrixStack = new MatrixStack();
     this.xOffset = lastX = xOffset;
     this.yOffset = lastY = yOffset;
+    matrixStack = new MatrixStack();
     textList = new ArrayList<>();
   }
 
-  public void draw(String text, int color) {
+  static final class TextStuff {
+    public final String text;
+    public final int x;
+    public final int y;
+    public final int color;
+
+    TextStuff(String text, int x, int y, int color) {
+      this.text = text;
+      this.x = x;
+      this.y = y;
+      this.color = color;
+    }
+  }
+
+  public Hud print(String text, int color) {
     maxLen = Math.max(maxLen, textRenderer.getWidth(text));
     textList.add(new TextStuff(text, lastX, lastY, color));
     lastX = lastX + textRenderer.getWidth(text);
+    return this;
   }
 
-  public void drawLine(String text, int heightOffset, int color) {
+  public Hud println(String text, int heightOffset, int color) {
     lastY = lastY + heightOffset;
     lastX = xOffset;
     textList.add(new TextStuff(text, lastX, lastY, color));
+    return this;
   }
 
-  public void renderText() {
+  public void render(int backgroundPadding, int backgroundColor) {
+    drawBackground(backgroundPadding, backgroundColor);
     for (TextStuff textStuff : textList) {
       textRenderer.drawWithShadow(
           matrixStack, textStuff.text, textStuff.x, textStuff.y, textStuff.color);
     }
   }
 
-  public void insertSpace(int height) {
+  public Hud insertSpace(int height) {
     lastY = lastY + height;
+    return this;
   }
 
-  public void drawBackground(int padding, int color) {
+  private void drawBackground(int padding, int color) {
     DrawableHelper.fill(
         matrixStack,
         xOffset - padding,

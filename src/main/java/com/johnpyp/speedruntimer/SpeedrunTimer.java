@@ -4,24 +4,25 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 
-import java.io.IOException;
+import java.io.File;
 
 @Environment(EnvType.CLIENT)
 public class SpeedrunTimer implements ModInitializer {
 
+  public static Config config =
+      Config.of(
+          new File(
+              FabricLoader.getInstance().getConfigDir().toFile(), "speedrun-timer.config.json"));
+
   @Override
   public void onInitialize() {
     MinecraftClient client = MinecraftClient.getInstance();
-    RunDataStore store = new RunDataStore("speedrun-timer.data.json");
-    try {
-      store.load();
-    } catch (IOException e) {
-      e.printStackTrace();
-      return;
-    }
-    TickHandler tickHandler = new TickHandler(client, store);
+    File configDir = FabricLoader.getInstance().getConfigDir().toFile();
+    RunDataStore store = RunDataStore.of(new File(configDir, "speedrun-timer.data.json"));
+    TickHandler tickHandler = new TickHandler(client, store, config);
     HudRenderCallback.EVENT.register((__, ___) -> tickHandler.tick());
   }
 }

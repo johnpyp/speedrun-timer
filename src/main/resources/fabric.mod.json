@@ -11,12 +11,15 @@
     "homepage": "https://github.com/johnpyp/speedrun-timer",
     "sources": "https://github.com/johnpyp/speedrun-timer"
   },
-  "license": "CC0-1.0",
+  "license": "MIT",
   "icon": "assets/timer/icon.png",
   "environment": "client",
   "entrypoints": {
     "main": [
       "com.johnpyp.speedruntimer.SpeedrunTimer"
+    ],
+    "modmenu": [
+      "com.johnpyp.speedruntimer.TimerModMenu"
     ]
   },
   "mixins": [
@@ -29,5 +32,8 @@
   },
   "suggests": {
     "flamingo": "*"
+  },
+  "custom": {
+    "modmenu:clientsideOnly": true
   }
 }

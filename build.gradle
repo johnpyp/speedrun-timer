@@ -10,6 +10,19 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
+repositories {
+    mavenLocal()
+	maven {
+		url "https://maven.fabricmc.net/io/github/prospector/modmenu"
+	}
+	maven {
+		name = "AperLambda"
+		url = 'https://aperlambda.github.io/maven'
+	}
+	maven { url = "https://jitpack.io" }
+
+}
+
 dependencies {
 	//to change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -18,6 +31,14 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modImplementation "io.github.prospector:modmenu:1.14.5+build.30"
+
+	modApi("me.shedaniel.cloth:config-2:4.6.0") {
+		exclude(group: "net.fabricmc.fabric-api")
+	}
+
+	include "me.shedaniel.cloth:config-2:4.6.0"
+	include "io.github.prospector:modmenu:1.14.5+build.30"
 
 }
 

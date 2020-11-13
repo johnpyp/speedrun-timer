@@ -1,15 +1,33 @@
 package com.johnpyp.speedruntimer;
 
-public class SingleRunData {
-  public long startTimestamp = -1;
-  public long finishedTimestamp = -1;
-  public long ticks = -1;
-  public long overworldSplit = -1;
-  public long netherSplit = -1;
-  public long strongholdSplit = -1;
-  public long finishedSplit = -1;
+final class SingleRunData {
+  private static final long UNINITIALIZED = -1;
+  public long ticks = UNINITIALIZED;
+  public long startTimestamp = UNINITIALIZED;
+  public long finishedTimestamp = UNINITIALIZED;
+  public long overworldSplit = UNINITIALIZED;
+  public long netherSplit = UNINITIALIZED;
+  public long strongholdSplit = UNINITIALIZED;
+  public long finishedSplit = UNINITIALIZED;
+
+  SingleRunData(long ticks) {
+    this.ticks = ticks;
+    startTimestamp = System.currentTimeMillis();
+  }
 
   public boolean isFinished() {
-    return finishedSplit != -1;
+    return finishedSplit != UNINITIALIZED;
+  }
+
+  public boolean hasStrongholdSplit() {
+    return strongholdSplit != UNINITIALIZED;
+  }
+
+  public boolean hasNetherSplit() {
+    return netherSplit != UNINITIALIZED;
+  }
+
+  public boolean hasOverworldSplit() {
+    return overworldSplit != UNINITIALIZED;
   }
 }

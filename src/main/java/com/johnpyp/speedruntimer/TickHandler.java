@@ -13,19 +13,29 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.time.DurationFormatUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 public class TickHandler {
+
+  private static final String ACHIEVEMENT_NETHER = "minecraft:nether/root";
+  private static final String ACHIEVEMENT_STRONGHOLD = "minecraft:end/root";
+
+  private static final long DEBOUNCE_PERSIST_MS = 2000L;
+  private static final long DEBOUNCE_SERVER_QUERY_MS = 500L;
+
   private final MinecraftClient minecraftClient;
   private final Debounce persistDebounce;
   private final Debounce serverQueryDebounce;
   private final RunDataStore store;
+  private final Config config;
 
-  public TickHandler(MinecraftClient client, RunDataStore store) {
+  public TickHandler(MinecraftClient client, RunDataStore store, Config config) {
+    this.config = config;
     this.store = store;
-    persistDebounce = new Debounce(2000);
-    serverQueryDebounce = new Debounce(500);
+    persistDebounce = new Debounce(DEBOUNCE_PERSIST_MS);
+    serverQueryDebounce = new Debounce(DEBOUNCE_SERVER_QUERY_MS);
     minecraftClient = client;
   }
 
@@ -66,10 +76,10 @@ public class TickHandler {
     return advancementProgress.isDone();
   }
 
+  @Nullable
   private ServerPlayerEntity getServerPlayer(MinecraftServer server) {
     List<ServerPlayerEntity> playerList = server.getPlayerManager().getPlayerList();
-    if (playerList.size() != 1) return null;
-    return playerList.get(0);
+    return playerList.size() == 1 ? playerList.get(0) : null;
   }
 
   private SingleRunData updateRunData(
@@ -77,29 +87,34 @@ public class TickHandler {
     long ticks = TickHandler.getGameTicks(player);
     long currentTime = System.currentTimeMillis();
 
-    String runKey = RunDataStore.getRunKey(server);
-    SingleRunData run = store.solveItem(runKey, ticks);
+    if (persistDebounce.boing()) store.persist();
+
+    SingleRunData run = store.solveItem(server, ticks);
 
     run.ticks = ticks;
     run.startTimestamp = Math.min(currentTime - (ticks * 50), run.startTimestamp);
 
     if (!serverQueryDebounce.boing()) return run;
 
-    if (run.finishedSplit == -1 && ((ServerPlayerEntityAccessor) serverPlayer).seenCredits()) {
+    boolean seenCredits = false;
+    if (serverPlayer instanceof ServerPlayerEntityAccessor) {
+      seenCredits = ((ServerPlayerEntityAccessor) serverPlayer).seenCredits();
+    }
+    if (!run.isFinished() && seenCredits) {
       run.finishedSplit = ticks;
       run.finishedTimestamp = currentTime;
     }
-    if (run.overworldSplit == -1
-        && advancementDone("minecraft:nether/root", serverPlayer, server)) {
+    if (!run.hasOverworldSplit() && advancementDone(ACHIEVEMENT_NETHER, serverPlayer, server)) {
       run.overworldSplit = ticks;
     }
 
-    if (run.netherSplit == -1
-        && run.overworldSplit != -1
+    if (!run.hasNetherSplit()
+        && run.hasOverworldSplit()
         && serverPlayer.world.getRegistryKey() == World.OVERWORLD) {
       run.netherSplit = ticks;
     }
-    if (run.strongholdSplit == -1 && advancementDone("minecraft:end/root", serverPlayer, server)) {
+    if (!run.hasStrongholdSplit()
+        && advancementDone(ACHIEVEMENT_STRONGHOLD, serverPlayer, server)) {
       run.strongholdSplit = ticks;
     }
 
@@ -107,10 +122,9 @@ public class TickHandler {
   }
 
   private void render(MinecraftClient client, SingleRunData run) {
-    if (persistDebounce.boing()) store.persist();
 
     final TextRenderer textRenderer = client.textRenderer;
-    Hud hud = new Hud(textRenderer, 5, 5);
+    Hud hud = new Hud(textRenderer, config.data.xOffset, config.data.yOffset);
     if (((MinecraftClientAccessor) client).getGameOptions().debugEnabled) return;
     String gameTimeLabel = "Game Time: " + tickTime(run.ticks);
     String realTimeLabel =
@@ -118,16 +132,15 @@ public class TickHandler {
     String overworldSplitLabel = "Overworld: " + splitLabel(run.overworldSplit);
     String netherSplitLabel = "Nether: " + splitLabel(run.netherSplit);
     String strongholdSplitLabel = "Stronghold: " + splitLabel(run.strongholdSplit);
-    String finishedSplitLabel = "FINISH: " + splitLabel(run.finishedSplit);
+    String finishedSplitLabel = "Finish: " + splitLabel(run.finishedSplit);
 
-    hud.draw(gameTimeLabel, 0x29DB87);
-    hud.drawLine(realTimeLabel, 10, 0x59AB87);
-    hud.insertSpace(10);
-    hud.drawLine(overworldSplitLabel, 10, 0x9988FF);
-    hud.drawLine(netherSplitLabel, 10, 0xFF5555);
-    hud.drawLine(strongholdSplitLabel, 10, 0x99AADF);
-    hud.drawLine(finishedSplitLabel, 10, 0xFFA500);
-    hud.drawBackground(4, 0x99000011);
-    hud.renderText();
+    hud.print(gameTimeLabel, 0x29DB87)
+        .println(realTimeLabel, 10, 0x59AB87)
+        .insertSpace(10)
+        .println(overworldSplitLabel, 10, 0x777CFF)
+        .println(netherSplitLabel, 10, 0xFF5555)
+        .println(strongholdSplitLabel, 10, 0x99AADF)
+        .println(finishedSplitLabel, 10, 0xFFA500)
+        .render(4, 0x99000011);
   }
 }
