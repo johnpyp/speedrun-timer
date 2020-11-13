@@ -16,6 +16,9 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class TickHandler {
 
@@ -30,6 +33,8 @@ public class TickHandler {
   private final Debounce serverQueryDebounce;
   private final RunDataStore store;
   private final Config config;
+  private final Executor executor;
+  private final Runnable lambda;
 
   public TickHandler(MinecraftClient client, RunDataStore store, Config config) {
     this.config = config;
@@ -37,6 +42,8 @@ public class TickHandler {
     persistDebounce = new Debounce(DEBOUNCE_PERSIST_MS);
     serverQueryDebounce = new Debounce(DEBOUNCE_SERVER_QUERY_MS);
     minecraftClient = client;
+    executor = Executors.newSingleThreadExecutor();
+    lambda = store::persist;
   }
 
   private static String splitLabel(long ticks) {
@@ -44,6 +51,7 @@ public class TickHandler {
   }
 
   private static long getGameTicks(PlayerEntity player) {
+    if (player == null) return 0;
     return player.world.getTime();
   }
 
@@ -70,9 +78,13 @@ public class TickHandler {
 
   private boolean advancementDone(
       String advancementId, ServerPlayerEntity serverPlayer, MinecraftServer server) {
+    if (serverPlayer == null) return false;
     PlayerAdvancementTracker tracker = serverPlayer.getAdvancementTracker();
+    if (tracker == null) return false;
     Advancement advancement = server.getAdvancementLoader().get(new Identifier(advancementId));
+    if (advancement == null) return false;
     AdvancementProgress advancementProgress = tracker.getProgress(advancement);
+    if (advancementProgress == null) return false;
     return advancementProgress.isDone();
   }
 
@@ -87,7 +99,7 @@ public class TickHandler {
     long ticks = TickHandler.getGameTicks(player);
     long currentTime = System.currentTimeMillis();
 
-    if (persistDebounce.boing()) store.persist();
+    if (persistDebounce.boing()) executor.execute(lambda);
 
     SingleRunData run = store.solveItem(server, ticks);
 
@@ -97,7 +109,7 @@ public class TickHandler {
     if (!serverQueryDebounce.boing()) return run;
 
     boolean seenCredits = false;
-    if (serverPlayer instanceof ServerPlayerEntityAccessor) {
+    if (serverPlayer == null || serverPlayer instanceof ServerPlayerEntityAccessor) {
       seenCredits = ((ServerPlayerEntityAccessor) serverPlayer).seenCredits();
     }
     if (!run.isFinished() && seenCredits) {
