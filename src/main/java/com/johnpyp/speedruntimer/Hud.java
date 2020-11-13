@@ -34,6 +34,7 @@ final class Hud {
   }
 
   public Hud println(String text, int heightOffset, int color) {
+    maxLen = Math.max(maxLen, textRenderer.getWidth(text));
     lastY = lastY + heightOffset;
     lastX = xOffset;
     textList.add(new TextStuff(text, lastX, lastY, color));
@@ -58,7 +59,7 @@ final class Hud {
         matrixStack,
         xOffset - padding,
         yOffset - padding,
-        maxLen + 5 + padding,
+        xOffset + maxLen + padding,
         lastY + textRenderer.fontHeight + padding,
         color);
   }
