@@ -7,15 +7,14 @@ import net.minecraft.client.util.math.MatrixStack;
 import java.util.ArrayList;
 import java.util.List;
 
-
 final class Hud {
 
   private final List<TextStuff> textList;
   private final TextRenderer textRenderer;
   private final MatrixStack matrixStack;
-  private int maxLen;
   private final int xOffset;
   private final int yOffset;
+  private int maxLen;
   private int lastY;
   private int lastX;
 
@@ -25,20 +24,6 @@ final class Hud {
     this.yOffset = lastY = yOffset;
     matrixStack = new MatrixStack();
     textList = new ArrayList<>();
-  }
-
-  static final class TextStuff {
-    public final String text;
-    public final int x;
-    public final int y;
-    public final int color;
-
-    TextStuff(String text, int x, int y, int color) {
-      this.text = text;
-      this.x = x;
-      this.y = y;
-      this.color = color;
-    }
   }
 
   public Hud print(String text, int color) {
@@ -76,5 +61,19 @@ final class Hud {
         maxLen + 5 + padding,
         lastY + textRenderer.fontHeight + padding,
         color);
+  }
+
+  static final class TextStuff {
+    public final String text;
+    public final int x;
+    public final int y;
+    public final int color;
+
+    TextStuff(String text, int x, int y, int color) {
+      this.text = text;
+      this.x = x;
+      this.y = y;
+      this.color = color;
+    }
   }
 }

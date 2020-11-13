@@ -12,7 +12,7 @@ import java.io.File;
 @Environment(EnvType.CLIENT)
 public class SpeedrunTimer implements ModInitializer {
 
-  public static Config config =
+  public static final Config config =
       Config.of(
           new File(
               FabricLoader.getInstance().getConfigDir().toFile(), "speedrun-timer.config.json"));

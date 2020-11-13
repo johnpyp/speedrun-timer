@@ -20,8 +20,8 @@ class ConfigData {
 
 public class Config {
   private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+  public final File configFile;
   public ConfigData data;
-  public File configFile;
 
   Config(File configFile) {
     this.configFile = configFile;
@@ -31,6 +31,7 @@ public class Config {
   public static ConfigData getDefaultConfigData() {
     return new ConfigData(5, 5);
   }
+
   public static Config of(File configFile) {
     Config config = new Config(configFile);
     if (!configFile.exists()) {
@@ -60,7 +61,7 @@ public class Config {
         data = getDefaultConfigData();
         saveConfig();
         return;
-      };
+      }
       data = nextData;
     } catch (IOException e) {
       e.printStackTrace();

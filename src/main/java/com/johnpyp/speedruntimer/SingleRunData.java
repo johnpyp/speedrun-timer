@@ -2,8 +2,8 @@ package com.johnpyp.speedruntimer;
 
 final class SingleRunData {
   private static final long UNINITIALIZED = -1;
-  public long ticks = UNINITIALIZED;
-  public long startTimestamp = UNINITIALIZED;
+  public long ticks;
+  public long startTimestamp;
   public long finishedTimestamp = UNINITIALIZED;
   public long overworldSplit = UNINITIALIZED;
   public long netherSplit = UNINITIALIZED;
