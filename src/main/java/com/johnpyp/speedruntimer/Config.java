@@ -8,17 +8,25 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-class ConfigData {
-  public int xOffset;
-  public int yOffset;
-
-  ConfigData(int xOffset, int yOffset) {
-    this.xOffset = xOffset;
-    this.yOffset = yOffset;
-  }
-}
-
 public class Config {
+  public static final class ConfigData {
+    public int xOffset;
+    public int yOffset;
+    public double backgroundTransparency;
+    public boolean showSeed;
+    public boolean showCompareSplits;
+    public boolean useBestSplits;
+
+    ConfigData(int xOffset, int yOffset, double backgroundTransparency, boolean showSeed, boolean showCompareSplits, boolean useBestSplits) {
+      this.xOffset = xOffset;
+      this.yOffset = yOffset;
+      this.backgroundTransparency = backgroundTransparency;
+      this.showSeed = showSeed;
+      this.showCompareSplits = showCompareSplits;
+      this.useBestSplits = useBestSplits;
+    }
+  }
+
   private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
   public final File configFile;
   public ConfigData data;
@@ -29,7 +37,7 @@ public class Config {
   }
 
   public static ConfigData getDefaultConfigData() {
-    return new ConfigData(5, 5);
+    return new ConfigData(5, 5, 0.5, true, true, false);
   }
 
   public static Config of(File configFile) {

@@ -41,8 +41,8 @@ final class Hud {
     return this;
   }
 
-  public void render(int backgroundPadding, int backgroundColor) {
-    drawBackground(backgroundPadding, backgroundColor);
+  public void render(int backgroundPadding, int backgroundColor, double backgroundTransparency) {
+    drawBackground(backgroundPadding, backgroundColor, backgroundTransparency);
     for (TextStuff textStuff : textList) {
       textRenderer.drawWithShadow(
           matrixStack, textStuff.text, textStuff.x, textStuff.y, textStuff.color);
@@ -54,14 +54,15 @@ final class Hud {
     return this;
   }
 
-  private void drawBackground(int padding, int color) {
+  private void drawBackground(int padding, int color, double transparency) {
+    int alphaColor = ((int)(transparency * 255) << 24) & 0xFF000000 | color;
     DrawableHelper.fill(
         matrixStack,
         xOffset - padding,
         yOffset - padding,
         xOffset + maxLen + padding,
         lastY + textRenderer.fontHeight + padding,
-        color);
+        alphaColor);
   }
 
   static final class TextStuff {

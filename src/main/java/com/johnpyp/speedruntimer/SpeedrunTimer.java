@@ -1,5 +1,6 @@
 package com.johnpyp.speedruntimer;
 
+import com.johnpyp.speedruntimer.datastorage.DataStorage;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.api.ModInitializer;
@@ -22,8 +23,12 @@ public class SpeedrunTimer implements ModInitializer {
     config.loadConfig();
     MinecraftClient client = MinecraftClient.getInstance();
     File configDir = FabricLoader.getInstance().getConfigDir().toFile();
-    RunDataStore store = RunDataStore.of(new File(configDir, "speedrun-timer.data.json"));
+    DataStorage store = DataStorage.of(new File(configDir, "speedrun-timer.data.json"));
+    store.refreshBests("");
     TickHandler tickHandler = new TickHandler(client, store, config);
     HudRenderCallback.EVENT.register((__, ___) -> tickHandler.tick());
   }
+
+
+
 }
